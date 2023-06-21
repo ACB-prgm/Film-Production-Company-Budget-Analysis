@@ -18,9 +18,10 @@ TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token'
 
 @application.route('/')
 def index():
+    return "test"
     # Redirect the user to the Dropbox authorization URL
-    auth_url = f"{AUTHORIZE_URL}?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}"
-    return redirect(auth_url)
+    # auth_url = f"{AUTHORIZE_URL}?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}"
+    # return redirect(auth_url)
 
 @application.route('/auth/callback')
 def auth_callback():

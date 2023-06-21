@@ -66,3 +66,5 @@ urllib3==1.25.11
 wcwidth==0.2.6
 Werkzeug==2.3.6
 zipp==3.15.0
+
+# urllib3==1.25.11 is required to work with aws EB
