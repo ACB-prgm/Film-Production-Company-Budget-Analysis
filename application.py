@@ -10,7 +10,7 @@ CLIENT_ID = os.environ["APP_KEY"]
 CLIENT_SECRET = os.environ["APP_SECRET"]
 
 # Redirect URI
-REDIRECT_URI = 'http://127.0.0.1:5000/auth/callback'
+REDIRECT_URI = 'https://ProductionBudgetAnalyzer-env.eba-8us8qt3u.us-east-1.elasticbeanstalk.com/auth/callback'
 
 # OAuth endpoints
 AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize'
