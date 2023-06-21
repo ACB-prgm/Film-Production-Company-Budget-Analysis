@@ -1,4 +1,5 @@
 from flask import Flask, redirect, request, render_template
+from urllib.parse import urlencode
 from modules import DBXReader
 import requests
 import os
@@ -15,6 +16,10 @@ REDIRECT_URI = 'https://ProductionBudgetAnalyzer-env.eba-8us8qt3u.us-east-1.elas
 # OAuth endpoints
 AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize'
 TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token'
+CHECK_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token/check'
+
+access_token : str = ""
+
 
 @application.route('/')
 def index():
@@ -22,12 +27,40 @@ def index():
 
 @application.route("/auth/login", methods=["GET"])
 def login():
-    # Redirect the user to the Dropbox authorization URL
-    auth_url = f"{AUTHORIZE_URL}?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}"
-    return redirect(auth_url)
+
+    if access_token and token_valid():
+        pass
+    else:
+        # Redirect the user to the Dropbox authorization URL
+        params = {
+            'response_type': 'code',
+            'client_id': CLIENT_ID,
+            'redirect_uri': REDIRECT_URI,
+            'force_reapprove': 'true'  # Add the force_reapprove parameter
+        }
+
+        auth_url = f"{AUTHORIZE_URL}?{urlencode(params)}"
+        return redirect(auth_url)
+
+
+def token_valid():
+    headers = {
+        'Authorization': f'Bearer {access_token}'
+    }
+
+    response = requests.post(CHECK_TOKEN_URL, headers=headers)
+
+    if response.status_code == 200:
+        # Token is valid
+        return True
+    else:
+        # Token is invalid or expired
+        return False
+
 
 @application.route('/auth/callback')
 def auth_callback():
+    global access_token
     # Retrieve the authorization code from the query parameters
     auth_code = request.args.get('code')
     print(auth_code)
