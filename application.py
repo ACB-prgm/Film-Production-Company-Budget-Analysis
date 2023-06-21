@@ -1,12 +1,13 @@
 from flask import Flask, redirect, request
 from modules import DBXReader
 import requests
+import os
 
 application = Flask(__name__)
 
 # Dropbox application credentials
-CLIENT_ID = 'l7ntlj66lwtanxw'
-CLIENT_SECRET = 'kcdcgngkfh1moei'
+CLIENT_ID = os.environ["APP_KEY"]
+CLIENT_SECRET = os.environ["APP_SECRET"]
 
 # Redirect URI
 REDIRECT_URI = 'http://127.0.0.1:5000/auth/callback'
