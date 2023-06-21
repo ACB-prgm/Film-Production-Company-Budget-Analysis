@@ -17,6 +17,6 @@ def create_zip_archive(directory, archive_name, files):
 
 directory = "/Users/aaronbastian/Documents/Jupyter/Film-Production-Company-Budget-Analysis"
 archive_name = 'app.zip'
-files = [".ebextensions/", "application.py", "requirements.txt", "modules/"]
+files = [".ebextensions/", "application.py", "requirements.txt", "modules/", "templates/"]
 
 create_zip_archive(directory, archive_name, files)
