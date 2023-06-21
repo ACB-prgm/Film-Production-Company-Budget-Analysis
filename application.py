@@ -61,6 +61,7 @@ def token_valid():
 @application.route('/auth/callback')
 def auth_callback():
     global access_token
+    print("hello")
     # Retrieve the authorization code from the query parameters
     auth_code = request.args.get('code')
     print(auth_code)
@@ -75,8 +76,10 @@ def auth_callback():
     }
     response = requests.post(TOKEN_URL, data=payload)
 
+    print("p2")
     if response.status_code == 200:
         access_token = response.json()['access_token']
+        print(access_token)
         # Use the access token to make API requests on behalf of the user
         # Add your code here to perform actions with the access token
         return f"Access Token: {access_token}"
