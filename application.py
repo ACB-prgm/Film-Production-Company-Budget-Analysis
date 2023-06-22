@@ -11,7 +11,7 @@ CLIENT_ID = os.environ["APP_KEY"]
 CLIENT_SECRET = os.environ["APP_SECRET"]
 
 # Redirect URI
-REDIRECT_URI = 'https://ProductionBudgetAnalyzer-env.eba-8us8qt3u.us-east-1.elasticbeanstalk.com/auth/callback'
+REDIRECT_URI = 'http://productionbudgetanalyzer-env.eba-8us8qt3u.us-east-1.elasticbeanstalk.com/auth/callback'
 
 # OAuth endpoints
 AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize'
@@ -36,7 +36,7 @@ def login():
             'response_type': 'code',
             'client_id': CLIENT_ID,
             'redirect_uri': REDIRECT_URI,
-            'force_reapprove': 'true'  # Add the force_reapprove parameter
+            'force_reapprove': 'true'
         }
 
         auth_url = f"{AUTHORIZE_URL}?{urlencode(params)}"
