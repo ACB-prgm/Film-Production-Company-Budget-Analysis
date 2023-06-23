@@ -11,7 +11,7 @@ CLIENT_ID = os.environ["APP_KEY"]
 CLIENT_SECRET = os.environ["APP_SECRET"]
 
 # Redirect URI
-REDIRECT_URI = 'https://productionbudgetanalyzer-env.eba-8us8qt3u.us-east-1.elasticbeanstalk.com/auth/callback'
+REDIRECT_URI = 'https://productionbudgetanalyzer.xyz/auth/callback'
 
 # OAuth endpoints
 AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize'
