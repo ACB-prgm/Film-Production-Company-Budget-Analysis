@@ -433,6 +433,7 @@ class DbxDataRetriever:
         self.path = self.path_from_link(link)
         self.dbx = dbx
         self.dbx_files = {}
+        self.cache = {}
         self.datasets = {
             "CS" : [],
             "CSSS" : [],
@@ -580,11 +581,11 @@ class DbxDataRetriever:
         
         return None
     
-    def cache_df(self, df, _type) -> None:
+    def cache_df(self, df, _type):
         path = os.path.join(self.df_caches_path, "%s.csv" % _type)
         if not os.path.exists(path):
             df.to_csv(path, index=False)
-            return
+            return df
 
         cache_df = pd.read_csv(path)
         if not df.empty:

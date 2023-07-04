@@ -1,0 +1,53 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+
+<body>
+
+    <h2>Submit Link to Dropbox Folder</h2>
+
+    <form action="/submit" method="post">
+        <label for="link">Link: </label><br>
+        <input type="text" id="link" name="link"><br>
+        <input type="submit" value="Submit">
+    </form>
+    <br><strong>
+        This task may take some time to run (and the page will become unresponsive) depending on the number of new files to process.
+    </strong>
+
+    <h2>Finding The Correct Dropbox Link</h2>
+    <p>
+        <strong>Note:</strong> You must be logged into your Dropbox account to retrieve the correct link.
+    </p>
+    <p>
+        The link should be in a human-readable format, such as <strong>.../home/CorrectFolder</strong>, instead of a machine-readable format like <strong>.../abce7892ho/98374ytuhgirwov</strong>.
+    </p>
+    <p><strong>
+    In order for the program to correctly pull your data, please format your Dropbox folder as follows:
+    </p></strong>
+        <ol>
+            <li>Inside your Dropbox, create a main folder for your data, let's call it "_JOB_ACTUALS".</li>
+            <li>Within this "_JOB_ACTUALS" folder, create individual subfolders for each project. Use the project name or code for the subfolder's name as this is how they will be represented.</li>
+            <li>For each project subfolder, make sure to include all relevant files and documents. Specifically, each project folder should contain Cost Summary, PO logs, and/or Payroll content.</li>
+            <ul>
+                — The content of each project subfolder can be in any format, so feel free just to dump it all in there.
+            </ul>
+        </ol>
+        <p>
+            The structure should look like this:
+        </p>
+        <pre>
+    - _JOB_ACTUALS
+        - Project_A
+            - Content
+        - Project_B
+            - Content
+        - Project_C
+            - Content
+    </pre>
+
+        <img src="https://github.com/ACB-prgm/Granatosky2/assets/63984796/94583f13-7bc1-4db1-9a64-492ffc94979f" alt="getdbxlinkexample" style="width:1200px;height:500px;">
+
+</body>
+
+</html>

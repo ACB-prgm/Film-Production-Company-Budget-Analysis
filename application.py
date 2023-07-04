@@ -3,6 +3,7 @@ from google_auth_oauthlib.flow import Flow
 from urllib.parse import urlencode
 from modules import DBXReader
 import requests
+import dropbox
 import base64
 import boto3
 import json
@@ -64,7 +65,7 @@ def login():
     else:
         redirect(google_auth_url())
     
-    return "LOGIN SUCESSFULL"
+    return render_template("link_submission.html")
 
 @application.route('/auth/callback/<service>')
 def auth_callback(service):
@@ -91,7 +92,16 @@ def auth_callback(service):
     else:
         return 'Error retrieving access token'
 
+@application.route('/submit', methods=['POST'])
+def submit():
+    link = request.form['link']
+    
+    dbx = dropbox.Dropbox(os.environ["dbx_access_token"])
+    dbx_reader = DBXReader.DbxDataRetriever(link, dbx)
+    
+    dbx_reader.create_datasets()
 
+    return "Datasets Created!"
 
 # HELPERS ————————————————————————————————————————————————————————————————————————————————————————————————————————
 def dbx_signin_url() -> str:
