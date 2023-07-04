@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, wait
-import CONSTANTS
+from . import CONSTANTS
 import pandas as pd
 import numpy as np
 import tempfile
