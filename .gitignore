@@ -1,4 +1,6 @@
 **/.DS_Store
 /626_venv
 /test
+/df_caches
+dbx_retrieval_cache.pickle
 token.txt
