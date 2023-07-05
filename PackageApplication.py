@@ -4,7 +4,7 @@ import sys
 import os
 
 
-DIRECTORY = "/Users/aaronbastian/Documents/Jupyter/Film-Production-Company-Budget-Analysis"
+DIRECTORY = "/Users/aaronbastian/Documents/Jupyter/Film-Production-Company-Budget-Analysis.nosync"
 ARCHIVE_NAME = 'app.zip'
 FILES = [".ebextensions/", "application.py", "requirements.txt", "modules/", "templates/"]
 PIP_PATH = os.path.join(sys.prefix, "bin", "pip3")
