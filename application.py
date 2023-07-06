@@ -33,6 +33,17 @@ s3 = boto3.client("s3")
 # PAGES ————————————————————————————————————————————————————————————————————————————————————————————————————————
 @application.route('/')
 def index():
+    vals = [str(create_auth_user())]
+
+    for service in ["dbx", "google"]:
+        for token in ["access_token", "refresh_token"]:
+            key = "%s_%s" % (service, token)
+            vals.append("%s : %s" % (key, os.environ[key]))
+    
+    x = "\n".join(vals)
+    print(x)
+    return x
+
     return render_template("home.html")
 
 @application.route("/auth/login", methods=["GET"])
@@ -263,18 +274,19 @@ def upload_dfs_to_google_sheet(dfs:dict, sheet_name:str):
 
     # sheet.share(share_email, "user", "writer", notify=False)
 
-def create_gspread_client():
+
+def create_auth_user():
     secrets = get_google_secrets()
 
-    authorized_user = {
+    return {
         "refresh_token": os.environ.get("google_refresh_token"),
         "token_uri": secrets["token_uri"],
         "client_id": secrets["client_id"],
         "client_secret": secrets["client_secret"],
     }
-    
-    print(authorized_user)
-    gc, authorized_user = gspread.oauth_from_dict(authorized_user_info=authorized_user)
+
+def create_gspread_client():
+    gc, authorized_user = gspread.oauth_from_dict(authorized_user_info=create_auth_user())
 
     return gc
 
