@@ -33,22 +33,12 @@ s3 = boto3.client("s3")
 # PAGES ————————————————————————————————————————————————————————————————————————————————————————————————————————
 @application.route('/')
 def index():
-    populate_environ_tokens()
-    vals = [str(create_auth_user())]
-
-    for service in ["dbx", "google"]:
-        for token in ["access_token", "refresh_token"]:
-            key = "%s_%s" % (service, token)
-            vals.append("%s : %s" % (key, os.environ[key]))
-    
-    x = "\n".join(vals)
-    print(x)
-    return x
-
     return render_template("home.html")
 
 @application.route("/auth/login", methods=["GET"])
 def login():
+    populate_environ_tokens()
+
     # DBX FLOW
     token_valid = dbx_token_valid()
     if os.environ.get("dbx_access_token") and token_valid:
