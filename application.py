@@ -33,6 +33,7 @@ s3 = boto3.client("s3")
 # PAGES ————————————————————————————————————————————————————————————————————————————————————————————————————————
 @application.route('/')
 def index():
+    populate_environ_tokens()
     vals = [str(create_auth_user())]
 
     for service in ["dbx", "google"]:
@@ -292,5 +293,4 @@ def create_gspread_client():
 
 
 if __name__ == '__main__':
-    populate_environ_tokens()
     application.run()
