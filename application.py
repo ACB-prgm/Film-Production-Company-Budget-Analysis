@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template
+from flask import Flask, redirect, url_for, request, render_template, Response
 from urllib.parse import urlencode
 from modules import DBXReader
 import requests
@@ -96,7 +96,17 @@ def auth_callback(service):
 def submit():
     os.environ["dbx_link"] = request.form['link']
     return render_template("processing.html", url=url_for("process_data"), message="Your data is being processed. This may take some time, and the page will appear unresponsive.")
-    
+
+@application.route('/dbx_webhook', methods=["GET"])
+def dbx_webhook():
+    '''Respond to the webhook verification (GET request) by echoing back the challenge parameter.'''
+
+    resp = Response(request.args.get('challenge'))
+    resp.headers['Content-Type'] = 'text/plain'
+    resp.headers['X-Content-Type-Options'] = 'nosniff'
+
+    return resp
+
 @application.route('/processing/datasets', methods=['GET'])
 def process_data():
     dbx = dropbox.Dropbox(os.environ["dbx_access_token"])
