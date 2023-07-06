@@ -272,6 +272,8 @@ def create_gspread_client():
         "client_id": secrets["client_id"],
         "client_secret": secrets["client_secret"],
     }
+    
+    print(authorized_user)
     gc, authorized_user = gspread.oauth_from_dict(authorized_user_info=authorized_user)
 
     return gc
