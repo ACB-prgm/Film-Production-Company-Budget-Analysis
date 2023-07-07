@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template, Response
+from flask import Flask, redirect, url_for, request, render_template, make_response, jsonify
 from urllib.parse import urlencode
 from modules import DBXReader
 import requests
@@ -24,6 +24,7 @@ GOOGLE_OAUTH_SECRETS = "google_oauth_client_secrets.json"
 GOOGLE_TOKENS = "google_tokens.json"
 DBX_OAUTH_SECRETS = "dbx_secrets.json"
 DBX_TOKENS = "dbx_tokens.json"
+DBX_LINK = "dbx_link.txt"
 
 GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
@@ -94,24 +95,23 @@ def auth_callback(service):
 
 @application.route('/submit', methods=['POST'])
 def submit():
-    os.environ["dbx_link"] = request.form['link']
+    update_dbx_link(request.form['link'])
     return render_template("processing.html", url=url_for("process_data"), message="Your data is being processed. This may take some time, and the page will appear unresponsive.")
 
 @application.route('/dbx_webhook', methods=["POST"])
 def dbx_webhook():
-    if os.environ.get("dbx_link"):
-        process_data()
+    if link_exists():
+        return process_data()
+    else:
+        return error(400, "No Link Found")
     
-    return "200"
 
 @application.route('/processing/datasets', methods=['GET'])
 def process_data():
     populate_environ_tokens()
     dbx = dropbox.Dropbox(os.environ["dbx_access_token"])
     dbx_reader = DBXReader.DbxDataRetriever(os.environ["dbx_link"], dbx)
-    
     dbx_reader.create_datasets()
-    
     upload_dfs_to_google_sheet(dbx_reader.datasets, "626_budget_analysis")
 
     return "Success"
@@ -149,7 +149,7 @@ def dbx_token_valid() -> bool:
     data = {'query':'user'}
     response = requests.post(DBX_CHECK_TOKEN_URL, headers=headers, data=data)
 
-    if response.status_code != 401:
+    if response.status_code != 401: # 401 is unauthorized
         # Token is valid
         return True
     else:
@@ -273,21 +273,38 @@ def upload_dfs_to_google_sheet(dfs:dict, sheet_name:str):
 
     # sheet.share(share_email, "user", "writer", notify=False)
 
-
-def create_auth_user():
+def create_gspread_client():
     secrets = get_google_secrets()
-
-    return {
+    auth_user = {
         "refresh_token": os.environ.get("google_refresh_token"),
         "token_uri": secrets["token_uri"],
         "client_id": secrets["client_id"],
         "client_secret": secrets["client_secret"],
     }
 
-def create_gspread_client():
-    gc, authorized_user = gspread.oauth_from_dict(authorized_user_info=create_auth_user())
+    gc, _ = gspread.oauth_from_dict(authorized_user_info=auth_user)
 
     return gc
+
+def link_exists() -> bool:
+    if os.environ.get("dbx_link"):
+        return True
+    try:
+        link = s3.get_object(Bucket=BUCKET, Key=DBX_LINK)["Body"].read().decode('utf-8')
+        os.environ["dbx_link"] = link
+        return True
+    except:
+        return False
+
+def update_dbx_link(link) -> None:
+    os.environ["dbx_link"] = link
+    s3.put_object(Bucket=BUCKET, Key=DBX_LINK, Body=link)
+
+def error(num, message):
+    status_code = num
+    message = message
+    response = make_response(jsonify({"error": message}), status_code)
+    return response
 
 
 if __name__ == '__main__':
