@@ -99,10 +99,12 @@ def submit():
 
 @application.route('/dbx_webhook', methods=["POST"])
 def dbx_webhook():
-    return str(request.get_json())
+    if os.environ.get("dbx_link"):
+        process_data()
 
 @application.route('/processing/datasets', methods=['GET'])
 def process_data():
+    populate_environ_tokens()
     dbx = dropbox.Dropbox(os.environ["dbx_access_token"])
     dbx_reader = DBXReader.DbxDataRetriever(os.environ["dbx_link"], dbx)
     
