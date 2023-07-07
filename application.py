@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template
+from flask import Flask, redirect, url_for, request, render_template, Response
 from urllib.parse import urlencode
 from modules import DBXReader
 import requests
@@ -101,6 +101,8 @@ def submit():
 def dbx_webhook():
     if os.environ.get("dbx_link"):
         process_data()
+    
+    return "200"
 
 @application.route('/processing/datasets', methods=['GET'])
 def process_data():
@@ -112,7 +114,7 @@ def process_data():
     
     upload_dfs_to_google_sheet(dbx_reader.datasets, "626_budget_analysis")
 
-    return "success"
+    return "Success"
     # return render_template("processing.html", url=url_for("upload_to_google_sheets"), message="Your data is being processed. This may take some time, and the page will appear unresponsive.")
 
 # HELPERS ————————————————————————————————————————————————————————————————————————————————————————————————————————
