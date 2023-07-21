@@ -521,7 +521,7 @@ class DbxDataRetriever:
             elif isinstance(entry, dropbox.files.FolderMetadata):
                 self.ls_files_in_dir(file_path, entries)
         
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             # Submit file processing tasks to the executor
             futures = [executor.submit(process_entry, entry) for entry in res.entries]
 
@@ -543,7 +543,7 @@ class DbxDataRetriever:
                     self.dbx_files[entry.name] = dir_files
 
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             # Submit file processing tasks to the executor
             futures = [executor.submit(process_entry, entry) for entry in res.entries]
 
@@ -560,7 +560,7 @@ class DbxDataRetriever:
                 _df.loc[len(_df)] = self.get_file(file_path)
 
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             # Submit file processing tasks to the executor
             futures = [executor.submit(process_entry, entry) for entry in entries]
             # Wait for all tasks to complete
@@ -642,7 +642,7 @@ class DbxDataRetriever:
                         csss["PROJECT NAME"] = project_name
                         self.datasets["CSSS"].append(csss)
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             # Submit file processing tasks to the executor
             futures = [executor.submit(process_project, dir) for dir in self.dbx_files.keys()]
             # Wait for all tasks to complete
