@@ -10,7 +10,6 @@ import fitz
 import os
 import re
 
-
 # HELPER FUNCTIONS ——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 def get_content(extension, file_obj):
     if extension == ".pdf":

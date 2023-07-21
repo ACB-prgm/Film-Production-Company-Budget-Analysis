@@ -1,6 +1,7 @@
 from flask import Flask, redirect, url_for, request, render_template, make_response, jsonify
 from urllib.parse import urlencode
 from modules import DBXReader
+import multiprocessing
 import requests
 import dropbox
 import gspread
@@ -27,6 +28,7 @@ DBX_TOKENS = "dbx_tokens.json"
 DBX_LINK = "dbx_link.txt"
 
 GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+processing_data = None
 
 s3 = boto3.client("s3")
 
@@ -96,26 +98,46 @@ def auth_callback(service):
 @application.route('/submit', methods=['POST'])
 def submit():
     update_dbx_link(request.form['link'])
-    return render_template("processing.html", url=url_for("process_data"), message="Your data is being processed. This may take some time, and the page will appear unresponsive.")
+    start_processing(force_restart=True)
+    return render_template("processing.html", url=url_for("processing"), message="Your data is being processed. This may take some time, and the page will appear unresponsive.")
 
 @application.route('/dbx_webhook', methods=["POST"])
 def dbx_webhook():
     if link_exists():
-        return process_data()
+        start_processing()
+        return "Success"
     else:
         return error(400, "No Link Found")
     
 
 @application.route('/processing/datasets', methods=['GET'])
+def processing():
+    _processing = processing_data and processing_data.is_alive()
+    if _processing:
+        return render_template("processing.html", url=url_for("processing"), delay=3000, message="Your data is still processing...")
+    
+    return "Sucess! Your data has been processed"
+
+
+def start_processing(force_restart=False):
+    global processing_data
+    _processing = processing_data and processing_data.is_alive()
+
+    if not _processing: # Check if not currently processing
+        processing_data = multiprocessing.Process(target=process_data)
+        processing_data.start()
+    elif force_restart and _processing: # if already processing and need to override
+        processing_data.terminate()
+        processing_data = multiprocessing.Process(target=process_data)
+        processing_data.start()
+
+
 def process_data():
     populate_environ_tokens()
     dbx = dropbox.Dropbox(os.environ["dbx_access_token"])
     dbx_reader = DBXReader.DbxDataRetriever(os.environ["dbx_link"], dbx)
     dbx_reader.create_datasets()
     upload_dfs_to_google_sheet(dbx_reader.datasets, "626_budget_analysis")
-
-    return "Success"
-    # return render_template("processing.html", url=url_for("upload_to_google_sheets"), message="Your data is being processed. This may take some time, and the page will appear unresponsive.")
 
 # HELPERS ————————————————————————————————————————————————————————————————————————————————————————————————————————
 def dbx_auth_url() -> str:

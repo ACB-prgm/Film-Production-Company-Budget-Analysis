@@ -15,7 +15,10 @@
 </body>
 
 <script type="text/javascript">
-    window.location.href = "{{ url }}";
+    var delay = "{{ delay }}" || 1000;
+    setTimeout(function() {
+        window.location.href = "{{ url }}";
+    }, delay);
 </script>
 
 </html>
