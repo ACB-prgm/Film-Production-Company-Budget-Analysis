@@ -99,7 +99,7 @@ def auth_callback(service):
 def submit():
     update_dbx_link(request.form['link'])
     start_processing(force_restart=True)
-    return render_template("processing.html", url=url_for("processing"), message="Your data is being processed. This may take some time, and the page will appear unresponsive.")
+    return render_template("processing.html", url=url_for("processing"), message="Your data is being processed. This may take some time.")
 
 @application.route('/dbx_webhook', methods=["POST"])
 def dbx_webhook():

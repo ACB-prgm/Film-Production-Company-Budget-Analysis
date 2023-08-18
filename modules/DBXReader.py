@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, wait
-from . import CONSTANTS
+from modules import CONSTANTS
 import pandas as pd
 import numpy as np
 import tempfile
@@ -521,12 +521,8 @@ class DbxDataRetriever:
             elif isinstance(entry, dropbox.files.FolderMetadata):
                 self.ls_files_in_dir(file_path, entries)
         
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # Submit file processing tasks to the executor
-            futures = [executor.submit(process_entry, entry) for entry in res.entries]
-
-            # Wait for all tasks to complete
-            wait(futures)
+        for entry in res.entries:
+            process_entry(entry)
         
         if False in cache_check:
             return entries
@@ -543,30 +539,26 @@ class DbxDataRetriever:
                     self.dbx_files[entry.name] = dir_files
 
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor() as executor:
             # Submit file processing tasks to the executor
             futures = [executor.submit(process_entry, entry) for entry in res.entries]
 
             # Wait for all tasks to complete
             wait(futures)
 
-    def get_files_from_project(self, entries, _df) -> pd.DataFrame:
-        if _df is None:
-            _df = pd.DataFrame(columns=["_type", "extension", "file_obj"])
+    def get_files_from_project(self, entries) -> pd.DataFrame:
+        _df = []
 
         def process_entry(entry):
             file_path = entry.path_display
             if isinstance(entry, dropbox.files.FileMetadata):
-                _df.loc[len(_df)] = self.get_file(file_path)
+                _df.append(self.get_file(file_path))
 
-
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # Submit file processing tasks to the executor
+        with ThreadPoolExecutor(max_workers=3) as executor:
             futures = [executor.submit(process_entry, entry) for entry in entries]
-            # Wait for all tasks to complete
             wait(futures)
 
-        return _df
+        return pd.DataFrame(_df, columns=["_type", "extension", "file_obj"])
     
     def select_best_file(self, _type:str, _df:pd.DataFrame):
         matches = _df[_df._type == _type]
@@ -586,14 +578,14 @@ class DbxDataRetriever:
             df.to_csv(path, index=False)
             return df
 
-        cache_df = pd.read_csv(path)
+        _cache_df = pd.read_csv(path)
         if not df.empty:
-            cache_df = cache_df[~cache_df['PROJECT NAME'].isin(df["PROJECT NAME"].unique())]
-            cache_df = pd.concat([cache_df, df])
+            _cache_df = _cache_df[~_cache_df['PROJECT NAME'].isin(df["PROJECT NAME"].unique())]
+            _cache_df = pd.concat([_cache_df, df])
 
-        cache_df.to_csv(path, index=False)
+        _cache_df.to_csv(path, index=False)
 
-        return cache_df
+        return _cache_df
 
 
     def consolidate_datasets(self) -> None:
@@ -625,7 +617,7 @@ class DbxDataRetriever:
             project_name = dir
             entries = self.dbx_files[dir]
             
-            files = self.get_files_from_project(entries, None) # pd.DataFrame of fileobjs and their descriptors
+            files = self.get_files_from_project(entries) # pd.DataFrame of fileobjs and their descriptors
 
             for _type in self.datasets:
                 file = self.select_best_file(_type, files)
@@ -634,15 +626,15 @@ class DbxDataRetriever:
                     _df["PROJECT NAME"] = project_name
                     self.datasets[_type].append(_df)
 
-                    date_str = "20%s-01-01" % project_name[:2]
                     if _type == "CS":
+                        date_str = "20%s-01-01" % project_name[:2]
                         _df.DATE = _df.DATE.replace("REPLACE", date_str)
 
                         csss = get_CS_section_dfs(_df, file["file_obj"], file["extension"])
                         csss["PROJECT NAME"] = project_name
                         self.datasets["CSSS"].append(csss)
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor() as executor:
             # Submit file processing tasks to the executor
             futures = [executor.submit(process_project, dir) for dir in self.dbx_files.keys()]
             # Wait for all tasks to complete
