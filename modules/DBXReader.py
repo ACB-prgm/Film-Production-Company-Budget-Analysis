@@ -429,8 +429,9 @@ class DbxDataRetriever:
     df_caches_path = "df_caches"
     chunk_path = "dbx_reader_chunks.pickle"
 
-    def __init__(self, link, dbx, clear_cache=False) -> None:
+    def __init__(self, link, dbx, clear_cache=False, chunk_size=50) -> None:
         self.path = self.path_from_link(link)
+        self.chunk_size = chunk_size
         self.dbx = dbx
         self.dbx_files = {}
         self.cache = {}
@@ -664,28 +665,27 @@ class DbxDataRetriever:
                         csss["PROJECT NAME"] = project_name
                         self.datasets["CSSS"].append(csss)
 
-        projects = list(self.dbx_files.keys())
-        with ThreadPoolExecutor() as executor:
+        if len(self.dbx_files.keys()) > self.chunk_size:
+            projects = list(self.dbx_files.keys())
+            chunks = list(range(0, len(projects), 50)) + [len(projects)]
+            for idx, chunk in enumerate(chunks[1:]):
+                start = chunks[idx]
+                stop = chunk
+
+                with ThreadPoolExecutor() as executor:
+                    # Submit file processing tasks to the executor
+                    futures = [executor.submit(process_project, dir) for dir in projects[start:stop]]
+                    # Wait for all tasks to complete
+                    wait(futures)
+                
+                self.cache_current_chunk()
+            
+            self.datasets = self.load_chunked_dfs()
+            self.clear_chunks_cache()
+        else:
+            with ThreadPoolExecutor() as executor:
                 futures = [executor.submit(process_project, dir) for dir in projects]
                 wait(futures)
 
-        # CHUNKING
-        # x = self.dbx_files.keys()
-        # chunks = list(range(0, len(x), 10)) + [len(x)]
-        # for idx, chunk in enumerate(chunks[1:]):
-        #     start = chunks[idx]
-        #     stop = chunk
-
-        #     with ThreadPoolExecutor() as executor:
-        #         # Submit file processing tasks to the executor
-        #         futures = [executor.submit(process_project, dir) for dir in projects[start:stop]]
-        #         # Wait for all tasks to complete
-        #         wait(futures)
-            
-        #     self.cache_current_chunk()
-        
-        self.datasets = self.load_chunked_dfs()
-
         self.consolidate_datasets()
         self.save_cache()
-        # self.clear_chunks_cache() # CHUNKING 33#####A;OIURHG;AOIERHG
