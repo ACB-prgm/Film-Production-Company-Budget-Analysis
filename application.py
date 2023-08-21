@@ -311,6 +311,7 @@ def create_gspread_client():
 def link_exists() -> bool:
     if os.environ.get("dbx_link"):
         return True
+
     try:
         link = s3.get_object(Bucket=BUCKET, Key=DBX_LINK)["Body"].read().decode('utf-8')
         os.environ["dbx_link"] = link

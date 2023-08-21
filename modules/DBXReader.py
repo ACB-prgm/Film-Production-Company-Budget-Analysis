@@ -427,6 +427,7 @@ def read_purchase_order(file_obj, extension) -> pd.DataFrame:
 class DbxDataRetriever:
     cache_path = "dbx_retrieval_cache.pickle"
     df_caches_path = "df_caches"
+    chunk_path = "dbx_reader_chunks.pickle"
 
     def __init__(self, link, dbx, clear_cache=False) -> None:
         self.path = self.path_from_link(link)
@@ -453,6 +454,14 @@ class DbxDataRetriever:
         self.save_cache()
         for file in os.listdir(self.df_caches_path):
             os.remove(os.path.join(self.df_caches_path, file))
+    
+    def clear_datasets(self):
+        self.datasets = {
+            "CS" : [],
+            "CSSS" : [],
+            "PR" : [],
+            "PO" : []
+        }
 
     def path_from_link(self, path) -> str:
         start_key = "sh/"
@@ -509,40 +518,41 @@ class DbxDataRetriever:
         else:
             return pd.DataFrame()
 
-    def ls_files_in_dir(self, path:str, entries=[]) -> list:
+    def ls_files_in_dir(self, path:str, files=None) -> list:
+        if files is None:
+            files = []
+            
         res = self.dbx.files_list_folder(path)
-        cache_check = []
 
         def process_entry(entry):
             file_path = entry.path_display
             if isinstance(entry, dropbox.files.FileMetadata):
-                cache_check.append(self.cache_and_check(entry))
-                entries.append(entry)
+                files.append(entry)
             elif isinstance(entry, dropbox.files.FolderMetadata):
-                self.ls_files_in_dir(file_path, entries)
+                self.ls_files_in_dir(file_path, files)
         
-        for entry in res.entries:
-            process_entry(entry)
+        with ThreadPoolExecutor() as executor:
+            # Submit file processing tasks to the executor
+            futures = [executor.submit(process_entry, entry) for entry in res.entries]
+            # Wait for all tasks to complete
+            wait(futures)
         
-        if False in cache_check:
-            return entries
-        else:
-            return None
+        return files
 
     def create_files(self) -> None:
-        res = self.dbx.files_list_folder(self.path)
+        res = self.dbx.files_list_folder(self.path) # gets a list of all the projects in the main dir
 
         def process_entry(entry):
             if isinstance(entry, dropbox.files.FolderMetadata):
-                dir_files = self.ls_files_in_dir(entry.path_display)
+                dir_files = self.ls_files_in_dir(entry.path_display) # lists all the files in the projct dir
                 if dir_files:
-                    self.dbx_files[entry.name] = dir_files
-
+                    cache_check = [self.cache_and_check(file) for file in dir_files]
+                    if False in cache_check:
+                        self.dbx_files[entry.name] = dir_files
 
         with ThreadPoolExecutor() as executor:
             # Submit file processing tasks to the executor
             futures = [executor.submit(process_entry, entry) for entry in res.entries]
-
             # Wait for all tasks to complete
             wait(futures)
 
@@ -554,7 +564,7 @@ class DbxDataRetriever:
             if isinstance(entry, dropbox.files.FileMetadata):
                 _df.append(self.get_file(file_path))
 
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        with ThreadPoolExecutor() as executor:
             futures = [executor.submit(process_entry, entry) for entry in entries]
             wait(futures)
 
@@ -609,6 +619,26 @@ class DbxDataRetriever:
                 self.datasets[_type] = self.cache_df(df, _type)
             else:
                 self.datasets[_type] = self.cache_df(pd.DataFrame(), _type)
+
+    def cache_current_chunk(self) -> None:
+        datasets = self.load_chunked_dfs()
+        
+        with open(self.chunk_path, 'wb') as f:
+                pickle.dump(datasets, f)
+        
+        self.clear_datasets()
+    
+    def load_chunked_dfs(self) -> dict:
+        if os.path.exists(self.chunk_path):
+            with open(self.chunk_path, 'rb') as f:
+                cached_datasets = pickle.load(f)
+                return {key: self.datasets[key] + cached_datasets[key] for key in self.datasets}
+        else:
+            return self.datasets
+    
+    def clear_chunks_cache(self) -> None:
+        if os.path.exists(self.chunk_path):
+            os.remove(self.chunk_path)
     
     def create_datasets(self) -> None:
         self.create_files()
@@ -634,11 +664,28 @@ class DbxDataRetriever:
                         csss["PROJECT NAME"] = project_name
                         self.datasets["CSSS"].append(csss)
 
+        projects = list(self.dbx_files.keys())
         with ThreadPoolExecutor() as executor:
-            # Submit file processing tasks to the executor
-            futures = [executor.submit(process_project, dir) for dir in self.dbx_files.keys()]
-            # Wait for all tasks to complete
-            wait(futures)
+                futures = [executor.submit(process_project, dir) for dir in projects]
+                wait(futures)
+
+        # CHUNKING
+        # x = self.dbx_files.keys()
+        # chunks = list(range(0, len(x), 10)) + [len(x)]
+        # for idx, chunk in enumerate(chunks[1:]):
+        #     start = chunks[idx]
+        #     stop = chunk
+
+        #     with ThreadPoolExecutor() as executor:
+        #         # Submit file processing tasks to the executor
+        #         futures = [executor.submit(process_project, dir) for dir in projects[start:stop]]
+        #         # Wait for all tasks to complete
+        #         wait(futures)
+            
+        #     self.cache_current_chunk()
+        
+        self.datasets = self.load_chunked_dfs()
 
         self.consolidate_datasets()
         self.save_cache()
+        # self.clear_chunks_cache() # CHUNKING 33#####A;OIURHG;AOIERHG
